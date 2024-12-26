@@ -10,70 +10,65 @@ namespace MangaReader.MangaList;
 public class Presenter
 {
     private readonly Domain domain;
-    private IView? view;
+    private readonly IView view;
     private CancellationTokenSource? cts;
     private Task? task;
     private int currentPageIndex = 1;
     private int totalPageNumber = 0;
     private bool isLoading;
+    private MangaList? list;
 
-    public Presenter(Domain domain)
+    public Presenter(Domain domain, IView view)
     {
         this.domain = domain;
-    }
-
-    public void AttachView(IView view)
-    {
-        if (this.view != null)
-            return;
         this.view = view;
         this.Load();
     }
 
     private void ShowLoading()
     {
-        view?.SetLoadingVisible(true);
-        view?.SetErrorPanelVisible(false);
-        view?.SetMainContentVisible(false);
+        view.SetLoadingVisible(true);
+        view.SetErrorPanelVisible(false);
+        view.SetMainContentVisible(false);
     }
 
     private void ShowError(string errorMessage)
     {
-        view?.SetLoadingVisible(false);
-        view?.SetMainContentVisible(false);
-        view?.SetErrorMessage(errorMessage);
-        view?.SetErrorPanelVisible(true);
+        view.SetLoadingVisible(false);
+        view.SetMainContentVisible(false);
+        view.SetErrorMessage(errorMessage);
+        view.SetErrorPanelVisible(true);
     }
 
     private void ShowNoManga()
     {
-        view?.SetTotalMangaNumber("No manga");
-        view?.SetCurrentPageButtonContent("No page");
-        view?.SetCurrentPageButtonEnabled(false);
-        view?.SetFirstButtonAndPrevButtonEnabled(false);
-        view?.SetLastButtonAndNextButtonEnabled(false);
-        view?.SetListBoxContent(Enumerable.Empty<Item>());
-        view?.SetLoadingVisible(false);
-        view?.SetMainContentVisible(true);
-        view?.SetErrorPanelVisible(false);
+        view.SetTotalMangaNumber("No manga");
+        view.SetCurrentPageButtonContent("No page");
+        view.SetCurrentPageButtonEnabled(false);
+        view.SetFirstButtonAndPrevButtonEnabled(false);
+        view.SetLastButtonAndNextButtonEnabled(false);
+        view.SetListBoxContent(Enumerable.Empty<Item>());
+        view.SetLoadingVisible(false);
+        view.SetMainContentVisible(true);
+        view.SetErrorPanelVisible(false);
     }
 
     private void ShowMangaList(MangaList list)
     {
-        view?.SetTotalMangaNumber(list.TotalMangaNumber + "mangas");
-        view?.SetFirstButtonAndPrevButtonEnabled(currentPageIndex > 1);
-        view?.SetCurrentPageButtonContent("page" + currentPageIndex+ " of " + list.TotalPageNumber);
-        view?.SetCurrentPageButtonEnabled(true);
-        view?.SetNumericUpDownValue(currentPageIndex);
-        view?.SetNumericUpDownMaximum(list.TotalPageNumber);
-        view?.SetLastButtonAndNextButtonEnabled(currentPageIndex < list.TotalPageNumber);
-        view?.SetListBoxContent(
+        view.SetTotalMangaNumber(list.TotalMangaNumber + "mangas");
+        view.SetFirstButtonAndPrevButtonEnabled(currentPageIndex > 1);
+        view.SetCurrentPageButtonContent("page " + currentPageIndex+ " of " + list.TotalPageNumber);
+        view.SetCurrentPageButtonEnabled(true);
+        view.SetNumericUpDownValue(currentPageIndex);
+        view.SetNumericUpDownMaximum(list.TotalPageNumber);
+        view.SetLastButtonAndNextButtonEnabled(currentPageIndex < list.TotalPageNumber);
+        view.SetListBoxContent(
             list.CurrentPage.Select(manga =>new Item (manga.Title, manga.LastChapter, manga.Description    
             ))
         );
-        view?.SetMainContentVisible(true);
-        view?.SetErrorPanelVisible(false);
-        view?.SetLoadingVisible(false);
+        view.SetMainContentVisible(true);
+        view.SetErrorPanelVisible(false);
+        view.SetLoadingVisible(false);
     }
 
     public async void Load()
@@ -96,11 +91,11 @@ public class Presenter
             }
             cts = null;
         }
-        MangaList? list = null;
+        list = null;
         string? errorMessage = null;
         try
         {
-            list = await domain.LoadMangaList(currentPageIndex, view?.GetFilterText() ?? "");
+            list = await domain.LoadMangaList(currentPageIndex, view.GetFilterText() ?? "");
         }
         catch (NetworkException ex)
         {
@@ -146,7 +141,7 @@ public class Presenter
                 bytes = null;
             }
             if(token.IsCancellationRequested) break;
-            view?.SetCover(index, bytes);
+            view.SetCover(index, bytes);
         }
     }
 
@@ -154,7 +149,7 @@ public class Presenter
     {
         if(isLoading || currentPageIndex >= totalPageNumber) return;
         currentPageIndex++;
-        view?.SetNumericUpDownValue(currentPageIndex);
+        view.SetNumericUpDownValue(currentPageIndex);
         this.Load();
     }
 
@@ -162,7 +157,7 @@ public class Presenter
     {
         if (isLoading || currentPageIndex <= 1) return;
         currentPageIndex--;
-        view?.SetNumericUpDownValue(currentPageIndex);
+        view.SetNumericUpDownValue(currentPageIndex);
         this.Load();
     }
 
@@ -170,7 +165,7 @@ public class Presenter
     {
         if( isLoading || currentPageIndex <=1) return;
         currentPageIndex = 1;
-        view?.SetNumericUpDownValue(currentPageIndex);
+        view.SetNumericUpDownValue(currentPageIndex);
         this.Load();
     }
 
@@ -178,13 +173,13 @@ public class Presenter
     {
         if(isLoading || currentPageIndex >= totalPageNumber) return;
         currentPageIndex = totalPageNumber;
-        view?.SetNumericUpDownValue(currentPageIndex);
+        view.SetNumericUpDownValue(currentPageIndex);
         this.Load();
     }
 
     public void GoSpecificPage()
     {
-        if(isLoading || view == null)  return;
+        if(isLoading)  return;
         view.HideFlyout();
         var pageIndex = view.GetNumericUpDownValue();
         if(pageIndex < 1 || pageIndex > totalPageNumber) return;
@@ -196,5 +191,13 @@ public class Presenter
     {
         currentPageIndex = 1;
         this.Load();
+    }
+
+    public void SelectManga(int index)
+    {
+        if(list == null) return;
+        if (index < 0 || index >= list.CurrentPage.Count) return;
+        var mangaUrl = list.CurrentPage[index].MangaUrl;
+        view.OpenMangaDetail(mangaUrl);
     }
 }

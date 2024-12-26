@@ -40,5 +40,5 @@ public interface IView
 
     void SetErrorMessage(string text);
     string? GetFilterText();
-
+    void OpenMangaDetail(string mangaUrl);
 }

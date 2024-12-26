@@ -9,22 +9,26 @@ using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using MangaReader.DomainCommon;
 
 namespace MangaReader.MangaList;
 
 public partial class View : Window, IView
 {
     private readonly Presenter? presenter;
-    private readonly List<ItemControl> itemcontrols = new();
+    private readonly Http? http;
+    private readonly List<ItemControl> itemControls = new();
     public View()
     {
         InitializeComponent();
     }
 
-    public View(Presenter? presenter) : this()
+    public View(string baseUrl, Http http) : this()
     {
-        this.presenter = presenter;
-        this.ErrorPanel.RetryButton.Click += (sender, args) => this.presenter?.Load();
+        this.http = http;
+        var domain = new Domain(baseUrl, http);
+        presenter = new Presenter(domain, this);
+        this.ErrorPanel.RetryButton.Click += (sender, args) => presenter.Load();
     }
 
     public void SetLoadingVisible(bool value)
@@ -74,15 +78,18 @@ public partial class View : Window, IView
 
     public void SetListBoxContent(IEnumerable<Item> items)
     {
-        itemcontrols.Clear();
         this.MangaListBox.Items.Clear();
+        foreach (var itemControl in itemControls)
+        {
+            ViewCommon.Utils.DisposeImageSource(itemControl.CoverImage);
+        }
         foreach (var item in items)
         {
             var itemControl = new ItemControl();
             itemControl.TitleTextBlock.Text = item.Title;
             itemControl.ChapterNumberTextBlock.Text = item.LastChapter;
             ToolTip.SetTip(itemControl.CoverBorder, item.ToolTip);
-            itemcontrols.Add(itemControl);
+            itemControls.Add(itemControl);
             this.MangaListBox.Items.Add(new ListBoxItem{Content = itemControl});
         }
     }
@@ -90,7 +97,7 @@ public partial class View : Window, IView
     public void SetCover(int index, byte[]? bytes)
     {
         var errorCoverBackground = Brushes.DeepPink;
-        var itemControl = itemcontrols[index];
+        var itemControl = itemControls[index];
         if (bytes == null)
         {
             itemControl.CoverBorder.Background = errorCoverBackground;
@@ -168,7 +175,7 @@ public partial class View : Window, IView
 
     private void MyListBox_onDoubleTapped(object? sender, TappedEventArgs e)
     {
-        Console.WriteLine("selected: " + this.MangaListBox.SelectedIndex);
+        presenter?.SelectManga(this.MangaListBox.SelectedIndex);
     }
     public string? GetFilterText()
     {
@@ -183,14 +190,30 @@ public partial class View : Window, IView
     public void ApplyButton_OnClick(object? sender, RoutedEventArgs e)
     {
         presenter?.ApplyFilter();
+        
     }
 
     private void MyListBox_OnKeyUp(object? sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter)
         {
-            Console.WriteLine("selected: " + this.MangaListBox.SelectedIndex);
+            presenter?.SelectManga(this.MangaListBox.SelectedIndex);
         }
     }
+    public void OpenMangaDetail(string mangaUrl)
+    {
+        // Console.WriteLine($"Manga URL: {mangaUrl}");
+        var window = new MangaDetail.View(mangaUrl, http);
+        window.Show(owner: this);
+    }
+
+    private void MyListBox_OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            presenter?.ApplyFilter();
+        }
+    }
+
 }
     

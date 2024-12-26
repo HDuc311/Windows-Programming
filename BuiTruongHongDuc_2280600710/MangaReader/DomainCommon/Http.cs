@@ -40,8 +40,7 @@ public class Http: IDisposable
     {
         try
         {
-            using var message = await client.GetAsync(url, token);
-            return await message.Content.ReadAsByteArrayAsync(token);
+            return await client.GetByteArrayAsync(url, token);
         }
         catch (HttpRequestException ex)
         {

@@ -6,14 +6,15 @@
         xmlns:vc="clr-namespace:MangaReader.ViewCommon"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="250"
         Width="600" Height="800"
-        x:Class="MangaReader.MangaList.View">
+        x:Class="MangaReader.MangaList.View"
+        Title="MangaReader">
        <Panel>
            <ProgressBar Name="LoadingProgressBar" IsIndeterminate="True"
                         HorizontalAlignment="Center" IsVisible="False"/>
            <vc:ErrorPanel Name="ErrorPanel" IsVisible="false"/>
            <DockPanel Name="MainContent">
                <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="10" Spacing="5">
-                   <TextBox Name="SearchTextBox" Width="300" HorizontalAlignment="Left" Watermark="Type filter text"/>
+                   <TextBox Name="SearchTextBox" Width="300" HorizontalAlignment="Left" Watermark="Type filter text" KeyDown="MyListBox_OnKeyDown"/>
                    <Button Name="ClearButton" Content="Clear" Click="ClearButton_OnClick" Width="60"/>
                    <Button Name="ApplyButton" Content="Apply" Click="ApplyButton_OnClick" Width="60"/>
                </StackPanel>
@@ -36,7 +37,7 @@
                    </Button>
                    <Button Name="NextButton" Click="NextButton_OnClick">Next &gt;</Button>
                    <Button Name="LastButton" Click="LastButton_OnClick">&gt;&gt;</Button>
-                   <!-- <Button Name="RefreshButton" HorizontalAlignment="Center"  -->
+                   <!-- <Button Name="RefreshButton" HorizontalAlignment="Center" -->
                    <!--         Click="RefreshButton_OnClick">Refresh</Button> -->
                    <!-- <TextBox Name="SearchTextBox" Width="200" HorizontalAlignment="Center"/> -->
                    <!-- <Button Name="ClearButton" HorizontalAlignment="Center" Click="ClearButton_OnClick">Clear</Button> -->

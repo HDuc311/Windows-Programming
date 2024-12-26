@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.ComponentModel;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml;
+using HtmlAgilityPack;
+using Fizzler.Systems.HtmlAgilityPack;
 using System.Web;
 using Avalonia.Controls.Chrome;
 using MangaReader.DomainCommon;
@@ -73,25 +75,24 @@ public class Domain
         return await http.GetStringAsync(url);
     }
 
-    private int ParseTotalMangaNumber(XmlDocument doc)
-    {
-        //hdcphu@ updated for https://apptruyen247.com
-        var text = doc.DocumentElement!.FirstChild!.FirstChild!.InnerText.Trim();
-        var number = text.Substring(7);
-        return int.Parse(number);
-    }
+    // private int ParseTotalMangaNumber(XmlDocument doc)
+    // {
+    //     //hdcphu@ updated for https://apptruyen247.com
+    //     var text = doc.DocumentElement!.FirstChild!.FirstChild!.InnerText.Trim();
+    //     vfar number = text.Substring(7);
+    //     return int.Parse(number);
+    // }
 
-     // private int ParseTotalPageNumber(XmlDocument doc)
-     // {
-     //     var div = doc.DocumentElement!.ChildNodes[3]!;
-     //     var span = div.LastChild!;
-     //     if (span.Attributes!["class"]!.Value == "current_page")
-     //         return int.Parse(span.InnerText);
-     //     var href = span.FirstChild!.Attributes!["href"]!.Value;
-     //     var openingParenthesisIndex = href.LastIndexOf('(');
-     //     var number = href.Substring(openingParenthesisIndex + 1, href.Length - openingParenthesisIndex - 2);
-     //     return int.Parse(number);
-     // }
+     private int ParseTotalPageNumber(HtmlNode section)
+     {
+         var a = section.QuerySelector("nav.paging-new li:last-child > a");
+         if(a == null)
+             return 1;
+         var href = a.Attributes["href"].Value;
+         var equalIndex = href.LastIndexOf('=');
+         var page = href[(equalIndex + 1)..];
+         return int.Parse(page);
+     }
     private int FindTotalPageNumber(string html)
     {
         var s = html.Substring(html.IndexOf("totalPages") + 13);
@@ -105,24 +106,23 @@ public class Domain
         s = s.Substring(0, s.IndexOf("}"));
         return int.Parse(s);
     }
-    private List<Manga> ParseMangaList(XmlDocument doc)
+    private List<Manga> ParseMangaList(HtmlNode section)
     {
-        //hdcphu@ updated for https://apptruyen247.com
-        var div = doc.DocumentElement!.FirstChild!;
-        var nodes = div.ChildNodes;
-        var mangaList = new List<Manga>();
-        for (int i = 0; i < nodes.Count; i++)
+        List<Manga> mangaList = new List<Manga>();
+        var bookWrapperNodes = section.QuerySelector("div.grid").QuerySelectorAll("div.book-wrapper").ToArray();
+        
+        for (int i = 0; i < bookWrapperNodes.Length; i++)
         {
-            var nodeF1 = nodes[i]!.FirstChild!;
-            var nodeUrlInfo = nodeF1.FirstChild!;
-            var nodeTitleInfo = nodeF1.ChildNodes[1]!;
+            var bookNode = bookWrapperNodes[i];
+            var a_relative = bookNode.QuerySelector("div > a");
+            var div_content = bookNode.QuerySelector("div > div");
             
-            var title = Html.Decode(nodeTitleInfo.FirstChild!.InnerText.Trim());
-            var description = Html.Decode(nodeTitleInfo.ChildNodes[1]!.InnerText.Trim());
-            var lastChapter = nodeTitleInfo.ChildNodes[2]!.FirstChild != null ? Html.Decode(nodeTitleInfo.ChildNodes[2]!.FirstChild?.InnerText!.Trim()!): "";
-            
-            var coverUrl = baseUrl + nodeUrlInfo.FirstChild!.Attributes!["src"]!.Value;
-            var mangaUrl = baseUrl + nodeUrlInfo.Attributes!["href"]!.Value;
+            var title = Html.Decode(div_content.QuerySelector("a").InnerText.Trim());
+            var description = Html.Decode(div_content.QuerySelector("div").InnerText.Trim());
+            var div_lastChapter = div_content.QuerySelector("div.flex.flex-col.flex-1.pr-4.justify-end.w-full > a");
+            var lastChapter = Html.Decode(div_lastChapter?.InnerText.Trim());
+            var coverUrl = baseUrl + Html.Decode(a_relative.QuerySelector("img").Attributes!["src"]!.Value);
+            var mangaUrl = baseUrl + Html.Decode(a_relative.Attributes!["href"]!.Value);
 
             var manga = new Manga(title, description, coverUrl, lastChapter, mangaUrl);
             mangaList.Add(manga);
@@ -137,17 +137,21 @@ public class Domain
         {
             var totalPageNumber = FindTotalPageNumber(html);
             var totalMangaNumber = FindTotalMangaNumber(html);
-            var doc = new XmlDocument();
+
             File.WriteAllText("docbefore.html",html);
             var xmlStartAt= html.IndexOf("<div class=\"grid grid-cols-1");
             html = html.Substring(xmlStartAt);
             html = html.Substring(0, html.IndexOf("<div class=\"mt-6\">"));
-            doc.LoadXml("<root>" + html + "</root>");
-            Console.WriteLine("Page loaded");
-            Console.WriteLine($"Got {totalMangaNumber} manga(s) of {totalPageNumber} page");
-            var page = ParseMangaList(doc);
-            return new MangaList(totalMangaNumber, totalPageNumber, page);
-             
+            var doc = new HtmlDocument();
+            doc.LoadHtml("<html> <head/> <body>" + html + "</body></html>");
+            var section = doc.DocumentNode;
+            if (section == null)
+                return new MangaList(0, 0, new List<Manga>());
+            return new MangaList(
+                totalPageNumber: totalPageNumber,
+                totalMangaNumber: totalMangaNumber,
+                currentPage: this.ParseMangaList(section));
+
         }
         catch (Exception e)
         {

@@ -1,0 +1,39 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vc="clr-namespace:MangaReader.ViewCommon"
+        xmlns:Child="clr-namespace:MangaReader.MangaDetail"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="MangaReader.MangaDetail.View" MinWidth="700"
+        Title="View">
+    
+        
+    <Panel>
+        <ProgressBar Name="ProgressBar" IsIndeterminate="True"
+                     HorizontalAlignment="Center" IsVisible="False"/>
+        <vc:ErrorPanel Name="ErrorPanel" IsVisible="False"/>
+                
+        <Grid Name="MangaContent">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150" MinWidth="150" MaxWidth="350"/>
+                <ColumnDefinition Width="4" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <ListBox Grid.Column="0" Name="ListBox" SelectionChanged="ListBox_OnSelectionChanged" SelectionMode="Multiple"
+                     MinWidth="150">
+                <ListBoxItem/>
+            </ListBox>
+                    
+            <GridSplitter Grid.Column="1" ResizeDirection="Columns"
+            />
+                    
+            <Border Grid.Column="2" Name="MainPanel">
+                <Child:Overview/>
+            </Border>
+        </Grid>
+                
+    </Panel>
+        
+        
+</Window>

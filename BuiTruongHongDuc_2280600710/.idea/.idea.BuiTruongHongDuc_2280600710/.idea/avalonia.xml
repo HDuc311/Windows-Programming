@@ -5,6 +5,9 @@
       <map>
         <entry key="MangaReader/App.axaml" value="MangaReader/MangaReader.csproj" />
         <entry key="MangaReader/MainWindow.axaml" value="MangaReader/MangaReader.csproj" />
+        <entry key="MangaReader/MangaDetail/ChapterDetail/View.axaml" value="MangaReader/MangaReader.csproj" />
+        <entry key="MangaReader/MangaDetail/Overview.axaml" value="MangaReader/MangaReader.csproj" />
+        <entry key="MangaReader/MangaDetail/View.axaml" value="MangaReader/MangaReader.csproj" />
         <entry key="MangaReader/MangaList/ItemControl.axaml" value="MangaReader/MangaReader.csproj" />
         <entry key="MangaReader/MangaList/View.axaml" value="MangaReader/MangaReader.csproj" />
         <entry key="MangaReader/ViewCommon/ErrorPanel.axaml" value="MangaReader/MangaReader.csproj" />
