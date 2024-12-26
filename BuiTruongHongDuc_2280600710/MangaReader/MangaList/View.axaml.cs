@@ -23,10 +23,11 @@ public partial class View : Window, IView
         InitializeComponent();
     }
 
-    public View(string baseUrl, Http http) : this()
+    public View(string baseUrl, Http http, string dbFile) : this()
     {
         this.http = http;
-        var domain = new Domain(baseUrl, http);
+        var db = new Db(dbFile);
+        var domain = new Domain(baseUrl,http, db);
         presenter = new Presenter(domain, this);
         this.ErrorPanel.RetryButton.Click += (sender, args) => presenter.Load();
     }
@@ -83,12 +84,20 @@ public partial class View : Window, IView
         {
             ViewCommon.Utils.DisposeImageSource(itemControl.CoverImage);
         }
+        itemControls.Clear();
+        var index = -1;
         foreach (var item in items)
         {
-            var itemControl = new ItemControl();
-            itemControl.TitleTextBlock.Text = item.Title;
-            itemControl.ChapterNumberTextBlock.Text = item.LastChapter;
-            ToolTip.SetTip(itemControl.CoverBorder, item.ToolTip);
+            index++;
+            var itemControl = new ItemControl
+            {
+                Title = item.Title,
+                ChapterNumber = item.ChapterNumber,
+                CoverToolTip = item.ToolTip,
+                IsFavorites = item.IsFavorites
+            };
+            var i = index;
+            itemControl.FavoritesButton.Click += (sender, args) => presenter?.ToggleFavoritesManga(i);
             itemControls.Add(itemControl);
             this.MangaListBox.Items.Add(new ListBoxItem{Content = itemControl});
         }
@@ -172,7 +181,6 @@ public partial class View : Window, IView
     {
         presenter?.Load();
     }
-
     private void MyListBox_onDoubleTapped(object? sender, TappedEventArgs e)
     {
         presenter?.SelectManga(this.MangaListBox.SelectedIndex);
@@ -214,6 +222,23 @@ public partial class View : Window, IView
             presenter?.ApplyFilter();
         }
     }
+    public void SetFavoritesManga(IEnumerable<string> mangaTitles)
+    {
+        this.FavoritesMenuItem.Items.Clear();
+        var index = -1;
+        foreach (var title in mangaTitles)
+        {
+            index++;
+            var item = new MenuItem{Header = title};
+            var i = index;
+            item.Click += (s, e) => presenter?.SelectFavoritesManga(i);
+            this.FavoritesMenuItem.Items.Add(item);
+        }
+    }
 
+    public void UpdateFavoritesManga(int index, bool value)
+    {
+        itemControls[index].IsFavorites = value;
+    }
 }
     

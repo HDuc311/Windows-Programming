@@ -32,6 +32,17 @@ public class Manga
     public string MangaUrl { get; }
 }
 
+public class FavoritesManga
+{
+    public string Url { get; }
+    public string Title { get; }
+
+    public FavoritesManga(string url, string title)
+    {
+        this.Url = url;
+        this.Title = title;
+    }
+}
 public class MangaList
 {
     public int TotalMangaNumber { get;}
@@ -51,14 +62,23 @@ public class Domain
 {
     private readonly string baseUrl;
     private readonly Http http;
+    private readonly IDb db;
+    private readonly List<FavoritesManga> favoritesMangas;
 
-    public Domain(string baseUrl, Http http)
+    public Domain(string baseUrl, Http http, IDb db)
     {
         this.baseUrl = baseUrl;
         this.http = http;
+        this.db = db;
+        favoritesMangas = db.LoadFavoritesManga();
+        this.SortFavoriesMangas();
     }
 
-    private async Task<string> DownloadHtml(int page, string filterText)
+    private void SortFavoriesMangas()
+    {
+        favoritesMangas.Sort((manga1, manga2) => string.Compare(manga1.Title, manga2.Title, StringComparison.OrdinalIgnoreCase));
+    }
+    private Task<string> DownloadHtml(int page, string filterText)
     {
         if (page < 1) page = 1;
         string url;
@@ -72,7 +92,7 @@ public class Domain
             url =$"{this.baseUrl}/tim-kiem?keyword={text}&page={page}";
         }
         Console.WriteLine($"Downloading page {page} from {url}");
-        return await http.GetStringAsync(url);
+        return http.GetStringAsync(url);
     }
 
     // private int ParseTotalMangaNumber(XmlDocument doc)
@@ -168,5 +188,37 @@ public class Domain
     public Task<byte[]> LoadBytes(string url, CancellationToken token)
     {
         return http.GetBytesAsync(url, token);
+    }
+
+    public IEnumerable<string> GetFavoritesMangaTitles()
+    {
+        return favoritesMangas.Select(favoritesManga => favoritesManga.Title);
+    }
+
+    public string? GetFavoritesMangaUrl(int index)
+    {
+        if(index < 0 || index >= favoritesMangas.Count)
+            return null;
+        return favoritesMangas[index].Url;
+    }
+
+    public bool IsFavoritesManga(string mangaUrl)
+    {
+        return favoritesMangas.Exists(manga => manga.Url == mangaUrl);
+    }
+
+    public void AddFavoritesManga(string url, string title)
+    {
+        if (this.IsFavoritesManga(url)) return;
+        var favoritesManga = new FavoritesManga(url, title);
+        favoritesMangas.Add(favoritesManga);
+        this.SortFavoriesMangas();
+        db.InsertFavoritesManga(favoritesManga);
+    }
+
+    public void RemoveFavoritesManga(string url)
+    {
+        favoritesMangas.RemoveAll(manga => manga.Url == url);
+        db.DeleteFavoritesManga(url);
     }
 }

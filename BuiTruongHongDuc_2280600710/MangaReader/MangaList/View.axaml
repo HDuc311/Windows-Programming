@@ -13,6 +13,9 @@
                         HorizontalAlignment="Center" IsVisible="False"/>
            <vc:ErrorPanel Name="ErrorPanel" IsVisible="false"/>
            <DockPanel Name="MainContent">
+               <Menu DockPanel.Dock="Top">
+                   <MenuItem Header="Favorites" Name="FavoritesMenuItem"/>
+               </Menu>
                <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="10" Spacing="5">
                    <TextBox Name="SearchTextBox" Width="300" HorizontalAlignment="Left" Watermark="Type filter text" KeyDown="MyListBox_OnKeyDown"/>
                    <Button Name="ClearButton" Content="Clear" Click="ClearButton_OnClick" Width="60"/>
